@@ -5,12 +5,15 @@ import LockButton from './components/LockButton.tsx'
 import Toast from './components/Toast.tsx'
 import FilterPanel from './components/FilterPanel.tsx'
 import ToolsPanel from './components/ToolsPanel.tsx'
+import InstallPrompt from './components/InstallPrompt.tsx'
 import FilterLab from './components/FilterLab.tsx'
 import { useImageDropPaste } from './hooks/useImageDropPaste.ts'
 import { useIOSGestureGuard } from './hooks/useIOSGestureGuard.ts'
 import { useLockFeedback } from './hooks/useLockFeedback.ts'
 import { useFlipTimer } from './hooks/useFlipTimer.ts'
 import { useAutoHideControls } from './hooks/useAutoHideControls.ts'
+import { useWakeLock } from './hooks/useWakeLock.ts'
+import { useSessionPersistence } from './hooks/useSessionPersistence.ts'
 import { useEtchStore } from './store/useEtchStore.ts'
 import './App.css'
 
@@ -28,6 +31,7 @@ function MainApp() {
   useLockFeedback()
   useFlipTimer()
   useAutoHideControls()
+  useSessionPersistence()
 
   const image = useEtchStore((s) => s.image)
   const locked = useEtchStore((s) => s.locked)
@@ -35,6 +39,8 @@ function MainApp() {
   const controlsVisible = useEtchStore((s) => s.ui.controlsVisible)
   const resetView = useEtchStore((s) => s.resetView)
   const [panel, setPanel] = useState<'filter' | 'tools' | null>(null)
+
+  useWakeLock(image !== null)
 
   const showControls = !locked && !cropping && !panel
 
@@ -45,6 +51,7 @@ function MainApp() {
 
       {!image ? (
         <div className="empty">
+          <InstallPrompt />
           <h1 className="empty__title">Etch</h1>
           <p className="empty__sub">Load a reference image to start tracing.</p>
           <ImageInput className="btn btn--primary">Choose image</ImageInput>

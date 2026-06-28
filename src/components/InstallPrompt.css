@@ -1,0 +1,53 @@
+.install {
+  position: absolute;
+  top: calc(0.6rem + var(--safe-top));
+  left: calc(0.6rem + var(--safe-left));
+  right: calc(3.6rem + var(--safe-right)); /* leave room for the lock button */
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.6rem 0.8rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: 0.8rem;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.install b {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.install__android {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex: 1;
+}
+
+.install__cta {
+  background: linear-gradient(160deg, var(--accent), var(--accent-deep));
+  border: none;
+  color: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.install__x {
+  margin-left: auto;
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.9rem;
+}

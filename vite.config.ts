@@ -15,8 +15,8 @@ export default defineConfig(({ command }) => ({
         name: 'Etch',
         short_name: 'Etch',
         description: 'Trace reference images in fullscreen. Lock the screen and trace.',
-        theme_color: '#111111',
-        background_color: '#111111',
+        theme_color: '#141011',
+        background_color: '#141011',
         display: 'standalone',
         orientation: 'any',
         icons: [
