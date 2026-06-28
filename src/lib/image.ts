@@ -9,45 +9,61 @@ export class ImageLoadError extends Error {}
  *  We attempt to decode first rather than trusting the MIME type: iOS often hands
  *  over camera-roll files (esp. HEIC) with an empty or unexpected `type`. */
 export async function loadImageFromBlob(blob: Blob): Promise<SourceImage> {
-  let bitmap: ImageBitmap | null = null
+  let drawable: ImageBitmap | HTMLCanvasElement | null = null
 
+  // Fast path: createImageBitmap. It's flaky in iOS standalone WebViews, so a
+  // failure here is expected on iOS and we fall through to the <img> path.
   try {
-    bitmap = await createImageBitmap(blob, { imageOrientation: 'from-image' })
+    drawable = await createImageBitmap(blob, { imageOrientation: 'from-image' })
   } catch {
-    // Older engines may not support the options bag — retry without it.
     try {
-      bitmap = await createImageBitmap(blob)
+      drawable = await createImageBitmap(blob)
     } catch {
-      bitmap = null
+      drawable = null
     }
   }
 
-  // Fallback path: some engines can't createImageBitmap from HEIC but CAN render
-  // it via an <img> (Safari decodes HEIC natively). Try that before giving up.
-  if (!bitmap) {
-    bitmap = await decodeViaImageElement(blob)
+  // Robust fallback: decode via a real <img> (which respects EXIF orientation by
+  // default) and rasterize onto a <canvas> — no createImageBitmap involved. This
+  // is the reliable path on iOS and also handles HEIC (Safari decodes natively).
+  if (!drawable) {
+    drawable = await decodeToCanvas(blob)
   }
 
-  if (!bitmap) {
+  if (!drawable) {
     throw new ImageLoadError(
-      "Couldn't open that image. iPhone HEIC photos sometimes fail — try a " +
-        'screenshot, or set Camera → Formats to "Most Compatible".',
+      "Couldn't open that image. If it's an iPhone HEIC photo, try a screenshot " +
+        'or set Camera → Formats to "Most Compatible".',
     )
   }
 
-  return { blob, bitmap, width: bitmap.width, height: bitmap.height }
+  return {
+    blob,
+    bitmap: drawable,
+    width: drawable.width,
+    height: drawable.height,
+  }
 }
 
-/** Decode via a hidden <img> + object URL, then rasterize to an ImageBitmap. */
-async function decodeViaImageElement(blob: Blob): Promise<ImageBitmap | null> {
+/** Decode via a hidden <img> + object URL, then draw onto a canvas. Avoids
+ *  createImageBitmap entirely (which is unreliable on iOS). */
+async function decodeToCanvas(blob: Blob): Promise<HTMLCanvasElement | null> {
   const url = URL.createObjectURL(blob)
   try {
     const img = new Image()
     img.decoding = 'async'
     img.src = url
     await img.decode()
-    if (!img.naturalWidth) return null
-    return await createImageBitmap(img)
+    const w = img.naturalWidth
+    const h = img.naturalHeight
+    if (!w || !h) return null
+    const canvas = document.createElement('canvas')
+    canvas.width = w
+    canvas.height = h
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return null
+    ctx.drawImage(img, 0, 0)
+    return canvas
   } catch {
     return null
   } finally {

@@ -4,7 +4,9 @@ import { create } from 'zustand'
  *  since Safari is buggy storing ImageBitmap); `bitmap` is the runtime copy. */
 export interface SourceImage {
   blob: Blob
-  bitmap: ImageBitmap
+  /** A drawable for the GL pipeline. ImageBitmap when available; a canvas on
+   *  iOS where createImageBitmap is unreliable (see lib/image.ts). */
+  bitmap: ImageBitmap | HTMLCanvasElement
   width: number
   height: number
 }
