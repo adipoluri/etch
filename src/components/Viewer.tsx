@@ -1,42 +1,92 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useEtchStore } from '../store/useEtchStore.ts'
 import { useGestures } from '../hooks/useGestures.ts'
+import { FilterRenderer } from '../gl/FilterRenderer.ts'
 import './Viewer.css'
+
+const QUALITY_HIGH = 2048
+const QUALITY_LOW = 1024
 
 export default function Viewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const rendererRef = useRef<FilterRenderer | null>(null)
+  const rafRef = useRef(0)
   // Latest measured container size (accurate, from ResizeObserver).
   const sizeRef = useRef({ w: 0, h: 0 })
 
   const image = useEtchStore((s) => s.image)
+  const filter = useEtchStore((s) => s.filter)
   const transform = useEtchStore((s) => s.transform)
   const locked = useEtchStore((s) => s.locked)
+  const interacting = useEtchStore((s) => s.interacting)
   const fitToScreen = useEtchStore((s) => s.fitToScreen)
 
   useGestures(containerRef)
 
-  // Draw the source bitmap into the canvas (once per image). M3 swaps this 2D
-  // draw for the WebGL filter pipeline; the transform layer stays the same.
+  // Coalesce renders to one per animation frame, reading the latest filter.
+  const scheduleRender = useCallback(() => {
+    if (rafRef.current) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = 0
+      rendererRef.current?.render(useEtchStore.getState().filter)
+    })
+  }, [])
+
+  // Create the WebGL renderer once.
   useEffect(() => {
     const canvas = canvasRef.current
-    if (!canvas || !image) return
-    canvas.width = image.width
-    canvas.height = image.height
-    const ctx = canvas.getContext('2d')
-    if (!ctx) return
-    ctx.drawImage(image.bitmap, 0, 0)
-  }, [image])
+    if (!canvas) return
+    try {
+      rendererRef.current = new FilterRenderer(canvas, QUALITY_HIGH)
+    } catch {
+      useEtchStore
+        .getState()
+        .setNotice(
+          'WebGL2 is unavailable on this browser, so trace filters are disabled.',
+        )
+    }
+    return () => {
+      cancelAnimationFrame(rafRef.current)
+      rendererRef.current?.dispose()
+      rendererRef.current = null
+    }
+  }, [])
 
-  // Track the container's real size via ResizeObserver (contentRect is accurate
-  // and fires *after* layout, fixing the "fit before measured" race). Re-fit on
-  // genuine size changes (e.g. orientation) — but never while locked (tracing).
+  // Upload each new image; size the canvas element to natural dims so the CSS
+  // transform scales from there (the drawing buffer is resolution-capped).
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const renderer = rendererRef.current
+    if (!canvas || !renderer || !image) return
+    canvas.style.width = `${image.width}px`
+    canvas.style.height = `${image.height}px`
+    renderer.setSource(image.bitmap)
+    scheduleRender()
+  }, [image, scheduleRender])
+
+  // Re-render whenever the filter changes (object identity changes on edit).
+  useEffect(() => {
+    if (image) scheduleRender()
+  }, [filter, image, scheduleRender])
+
+  // Performance guard: drop to a cheaper working resolution while dragging.
+  useEffect(() => {
+    const renderer = rendererRef.current
+    if (!renderer || !image) return
+    renderer.setMaxSize(interacting ? QUALITY_LOW : QUALITY_HIGH)
+    scheduleRender()
+  }, [interacting, image, scheduleRender])
+
+  // Track the container's real size via ResizeObserver (accurate, post-layout).
+  // Re-fit on genuine size changes (orientation) — never while locked (tracing).
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     const ro = new ResizeObserver((entries) => {
       const cr = entries[entries.length - 1].contentRect
-      const changed = cr.width !== sizeRef.current.w || cr.height !== sizeRef.current.h
+      const changed =
+        cr.width !== sizeRef.current.w || cr.height !== sizeRef.current.h
       sizeRef.current = { w: cr.width, h: cr.height }
       if (!changed) return
       const st = useEtchStore.getState()
@@ -59,19 +109,15 @@ export default function Viewer() {
   const { x, y, scale, rotation } = transform
 
   return (
-    <div
-      ref={containerRef}
-      className={`viewer${locked ? ' viewer--locked' : ''}`}
-    >
-      {image && (
-        <canvas
-          ref={canvasRef}
-          className="viewer__canvas"
-          style={{
-            transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
-          }}
-        />
-      )}
+    <div ref={containerRef} className={`viewer${locked ? ' viewer--locked' : ''}`}>
+      <canvas
+        ref={canvasRef}
+        className="viewer__canvas"
+        hidden={!image}
+        style={{
+          transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
+        }}
+      />
     </div>
   )
 }

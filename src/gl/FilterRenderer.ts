@@ -25,6 +25,7 @@ export class FilterRenderer {
   private maxSize: number
   private w = 0
   private h = 0
+  private srcImage: ImageBitmap | HTMLCanvasElement | null = null
   private srcTex: WebGLTexture | null = null
   private quad: twgl.BufferInfo
   private prog: Record<string, twgl.ProgramInfo>
@@ -61,6 +62,19 @@ export class FilterRenderer {
 
   /** Upload (and resolution-cap) the source image, (re)allocate framebuffers. */
   setSource(bitmap: ImageBitmap | HTMLCanvasElement) {
+    this.srcImage = bitmap
+    this.upload(bitmap)
+  }
+
+  /** Change the working-resolution cap and re-upload the current source. Used by
+   *  the performance guard to drop to a cheaper resolution while sliders drag. */
+  setMaxSize(maxSize: number) {
+    if (maxSize === this.maxSize) return
+    this.maxSize = maxSize
+    if (this.srcImage) this.upload(this.srcImage)
+  }
+
+  private upload(bitmap: ImageBitmap | HTMLCanvasElement) {
     const gl = this.gl
     const sw = 'width' in bitmap ? bitmap.width : 0
     const sh = 'height' in bitmap ? bitmap.height : 0

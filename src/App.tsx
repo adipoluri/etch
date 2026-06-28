@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import Viewer from './components/Viewer.tsx'
 import ImageInput from './components/ImageInput.tsx'
 import LockButton from './components/LockButton.tsx'
 import Toast from './components/Toast.tsx'
+import FilterPanel from './components/FilterPanel.tsx'
 import FilterLab from './components/FilterLab.tsx'
 import { useImageDropPaste } from './hooks/useImageDropPaste.ts'
 import { useIOSGestureGuard } from './hooks/useIOSGestureGuard.ts'
@@ -28,6 +30,7 @@ function MainApp() {
   const locked = useEtchStore((s) => s.locked)
   const controlsVisible = useEtchStore((s) => s.ui.controlsVisible)
   const resetView = useEtchStore((s) => s.resetView)
+  const [panelOpen, setPanelOpen] = useState(false)
 
   return (
     <div className={`app${controlsVisible ? '' : ' app--idle'}`}>
@@ -44,13 +47,19 @@ function MainApp() {
       ) : (
         <>
           <LockButton />
-          {!locked && (
+          {!locked && !panelOpen && (
             <div className="controls">
               <ImageInput className="btn">Image</ImageInput>
               <button className="btn" onClick={resetView}>
                 Fit
               </button>
+              <button className="btn" onClick={() => setPanelOpen(true)}>
+                Filter
+              </button>
             </div>
+          )}
+          {!locked && panelOpen && (
+            <FilterPanel onClose={() => setPanelOpen(false)} />
           )}
         </>
       )}

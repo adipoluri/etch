@@ -62,6 +62,8 @@ export interface EtchState {
   flipTimer: { on: boolean; intervalSec: number }
   locked: boolean
   ui: { controlsVisible: boolean }
+  /** True while a filter slider is being dragged → renderer drops to low res. */
+  interacting: boolean
   /** Transient user-facing message (errors, hints). Null when nothing to show. */
   notice: string | null
   /** Last measured viewer size, kept so reset/fit uses accurate dimensions. */
@@ -70,6 +72,7 @@ export interface EtchState {
   // actions
   setImage: (image: SourceImage | null) => void
   setNotice: (notice: string | null) => void
+  setInteracting: (interacting: boolean) => void
   setTransform: (patch: Partial<Transform>) => void
   setContainerSize: (w: number, h: number) => void
   /** Center + scale the current image to fit a container of the given size. */
@@ -91,11 +94,13 @@ export const useEtchStore = create<EtchState>((set, get) => ({
   flipTimer: { on: false, intervalSec: 30 },
   locked: false,
   ui: { controlsVisible: true },
+  interacting: false,
   notice: null,
   containerSize: { w: 0, h: 0 },
 
   setImage: (image) => set({ image }),
   setNotice: (notice) => set({ notice }),
+  setInteracting: (interacting) => set({ interacting }),
   setTransform: (patch) =>
     set((s) => ({ transform: { ...s.transform, ...patch } })),
   setContainerSize: (w, h) => set({ containerSize: { w, h } }),
