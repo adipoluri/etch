@@ -62,19 +62,27 @@ export interface EtchState {
   flipTimer: { on: boolean; intervalSec: number }
   locked: boolean
   ui: { controlsVisible: boolean }
+  /** Transient user-facing message (errors, hints). Null when nothing to show. */
+  notice: string | null
+  /** Last measured viewer size, kept so reset/fit uses accurate dimensions. */
+  containerSize: { w: number; h: number }
 
   // actions
   setImage: (image: SourceImage | null) => void
+  setNotice: (notice: string | null) => void
   setTransform: (patch: Partial<Transform>) => void
+  setContainerSize: (w: number, h: number) => void
   /** Center + scale the current image to fit a container of the given size. */
   fitToScreen: (containerW: number, containerH: number) => void
+  /** Fit using the last measured container size (for the Fit/reset button). */
+  resetView: () => void
   setFilter: (patch: Partial<FilterState>) => void
   toggleLock: () => void
   setControlsVisible: (visible: boolean) => void
   reset: () => void
 }
 
-export const useEtchStore = create<EtchState>((set) => ({
+export const useEtchStore = create<EtchState>((set, get) => ({
   image: null,
   transform: { ...IDENTITY_TRANSFORM },
   filter: { ...DEFAULT_FILTER },
@@ -83,19 +91,27 @@ export const useEtchStore = create<EtchState>((set) => ({
   flipTimer: { on: false, intervalSec: 30 },
   locked: false,
   ui: { controlsVisible: true },
+  notice: null,
+  containerSize: { w: 0, h: 0 },
 
   setImage: (image) => set({ image }),
+  setNotice: (notice) => set({ notice }),
   setTransform: (patch) =>
     set((s) => ({ transform: { ...s.transform, ...patch } })),
+  setContainerSize: (w, h) => set({ containerSize: { w, h } }),
   fitToScreen: (containerW, containerH) =>
     set((s) => {
-      if (!s.image || containerW === 0 || containerH === 0) return {}
+      if (!s.image || containerW <= 0 || containerH <= 0) return {}
       const scale = Math.min(
         containerW / s.image.width,
         containerH / s.image.height,
       )
       return { transform: { x: 0, y: 0, scale, rotation: 0 } }
     }),
+  resetView: () => {
+    const { containerSize, fitToScreen } = get()
+    fitToScreen(containerSize.w, containerSize.h)
+  },
   setFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
   toggleLock: () => set((s) => ({ locked: !s.locked })),
   setControlsVisible: (visible) =>

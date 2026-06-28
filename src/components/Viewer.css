@@ -17,11 +17,24 @@
   max-width: none;
 }
 
-/* Locked state: thin tinted border so a frozen screen is explained (M2 expands this). */
+/* Locked state: tinted border so a frozen screen is explained. The border
+   element only exists while locked, so it pulses once on entering lock. */
 .viewer--locked::after {
   content: '';
   position: absolute;
   inset: 0;
   pointer-events: none;
   border: 3px solid var(--lock-tint);
+  animation: lock-pulse 0.45s ease-out;
+}
+
+@keyframes lock-pulse {
+  0% {
+    border-width: 14px;
+    opacity: 0;
+  }
+  100% {
+    border-width: 3px;
+    opacity: 1;
+  }
 }

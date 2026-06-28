@@ -1,0 +1,59 @@
+.lock-btn {
+  position: absolute;
+  top: calc(0.75rem + var(--safe-top));
+  right: calc(0.75rem + var(--safe-right));
+  z-index: 40;
+
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  font-size: 1.3rem;
+
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 50%;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.lock-btn--locked {
+  border-color: var(--lock-tint);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Registering the property makes it animatable (custom props are discrete by
+   default). Supported in iOS Safari 16.4+. */
+@property --p {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+/* Hold-to-unlock progress ring: the fill animation runs while holding; its
+   completion (animationend) is what triggers the unlock — so even where --p
+   can't interpolate, the 600ms still elapses and unlock fires. */
+.lock-btn__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--lock-tint) var(--p, 0%), transparent 0);
+  opacity: 0.4;
+}
+
+.lock-btn--holding .lock-btn__ring {
+  animation: lock-fill 600ms linear forwards;
+}
+
+@keyframes lock-fill {
+  from {
+    --p: 0%;
+  }
+  to {
+    --p: 100%;
+  }
+}

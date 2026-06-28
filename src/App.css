@@ -3,6 +3,18 @@
   inset: 0;
 }
 
+/* Auto-hide: fade controls + lock button when idle. They reappear on activity. */
+.controls,
+.lock-btn {
+  transition: opacity 0.3s ease;
+}
+
+.app--idle .controls,
+.app--idle .lock-btn {
+  opacity: 0;
+  pointer-events: none;
+}
+
 /* Empty state ---------------------------------------------------------- */
 .empty {
   position: absolute;

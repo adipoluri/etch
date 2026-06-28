@@ -6,6 +6,8 @@ import './Viewer.css'
 export default function Viewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  // Latest measured container size (accurate, from ResizeObserver).
+  const sizeRef = useRef({ w: 0, h: 0 })
 
   const image = useEtchStore((s) => s.image)
   const transform = useEtchStore((s) => s.transform)
@@ -26,11 +28,32 @@ export default function Viewer() {
     ctx.drawImage(image.bitmap, 0, 0)
   }, [image])
 
-  // Fit to screen whenever a new image loads.
+  // Track the container's real size via ResizeObserver (contentRect is accurate
+  // and fires *after* layout, fixing the "fit before measured" race). Re-fit on
+  // genuine size changes (e.g. orientation) — but never while locked (tracing).
   useEffect(() => {
     const el = containerRef.current
-    if (!el || !image) return
-    fitToScreen(el.clientWidth, el.clientHeight)
+    if (!el) return
+    const ro = new ResizeObserver((entries) => {
+      const cr = entries[entries.length - 1].contentRect
+      const changed = cr.width !== sizeRef.current.w || cr.height !== sizeRef.current.h
+      sizeRef.current = { w: cr.width, h: cr.height }
+      if (!changed) return
+      const st = useEtchStore.getState()
+      if (cr.width > 0 && cr.height > 0) st.setContainerSize(cr.width, cr.height)
+      if (cr.width > 0 && cr.height > 0 && st.image && !st.locked) {
+        st.fitToScreen(cr.width, cr.height)
+      }
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Fit each newly loaded image, using the already-measured size.
+  useEffect(() => {
+    if (!image) return
+    const { w, h } = sizeRef.current
+    if (w > 0 && h > 0) fitToScreen(w, h)
   }, [image, fitToScreen])
 
   const { x, y, scale, rotation } = transform
