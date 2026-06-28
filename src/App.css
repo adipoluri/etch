@@ -1,0 +1,38 @@
+.app {
+  height: 100%;
+  width: 100%;
+}
+
+.viewer {
+  height: 100%;
+  width: 100%;
+  display: grid;
+  place-items: center;
+}
+
+.placeholder {
+  text-align: center;
+  padding: calc(1rem + var(--safe-top)) 1rem calc(1rem + var(--safe-bottom));
+  opacity: 0.9;
+}
+
+.placeholder h1 {
+  font-size: 3rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.25rem;
+}
+
+.placeholder p {
+  font-size: 0.95rem;
+  opacity: 0.7;
+  margin-bottom: 1.5rem;
+}
+
+.placeholder button {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  padding: 0.6rem 1.4rem;
+  font-size: 1rem;
+}

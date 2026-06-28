@@ -1,6 +1,8 @@
 node_modules/
 dist/
+dev-dist/
 build/
+*.tsbuildinfo
 .DS_Store
 *.log
 .env
