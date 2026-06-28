@@ -66,6 +66,8 @@ export interface EtchState {
   // actions
   setImage: (image: SourceImage | null) => void
   setTransform: (patch: Partial<Transform>) => void
+  /** Center + scale the current image to fit a container of the given size. */
+  fitToScreen: (containerW: number, containerH: number) => void
   setFilter: (patch: Partial<FilterState>) => void
   toggleLock: () => void
   setControlsVisible: (visible: boolean) => void
@@ -85,6 +87,15 @@ export const useEtchStore = create<EtchState>((set) => ({
   setImage: (image) => set({ image }),
   setTransform: (patch) =>
     set((s) => ({ transform: { ...s.transform, ...patch } })),
+  fitToScreen: (containerW, containerH) =>
+    set((s) => {
+      if (!s.image || containerW === 0 || containerH === 0) return {}
+      const scale = Math.min(
+        containerW / s.image.width,
+        containerH / s.image.height,
+      )
+      return { transform: { x: 0, y: 0, scale, rotation: 0 } }
+    }),
   setFilter: (patch) => set((s) => ({ filter: { ...s.filter, ...patch } })),
   toggleLock: () => set((s) => ({ locked: !s.locked })),
   setControlsVisible: (visible) =>
@@ -95,3 +106,8 @@ export const useEtchStore = create<EtchState>((set) => ({
       filter: { ...DEFAULT_FILTER },
     }),
 }))
+
+// Dev-only handle for debugging / preview testing in the console.
+if (import.meta.env.DEV) {
+  ;(globalThis as unknown as { etch?: typeof useEtchStore }).etch = useEtchStore
+}

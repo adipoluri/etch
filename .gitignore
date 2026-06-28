@@ -7,4 +7,5 @@ build/
 *.log
 .env
 .env.local
+.claude/settings.local.json
 .vite/

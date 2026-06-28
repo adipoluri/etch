@@ -1,0 +1,27 @@
+.viewer {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  touch-action: none; /* swallow native pan/zoom/scroll */
+}
+
+.viewer__canvas {
+  /* Natural-resolution canvas; CSS transform handles pan/zoom/rotate.
+     transform-origin center so rotate/scale pivot on the image center. */
+  transform-origin: center center;
+  will-change: transform;
+  /* Crisp when zoomed in on line art; browsers vary, this is a hint. */
+  image-rendering: auto;
+  max-width: none;
+}
+
+/* Locked state: thin tinted border so a frozen screen is explained (M2 expands this). */
+.viewer--locked::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border: 3px solid var(--lock-tint);
+}
