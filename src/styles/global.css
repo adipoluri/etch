@@ -41,6 +41,13 @@ body,
   width: 100%;
 }
 
+/* The body is position:fixed, so its background does NOT propagate to the
+   viewport backdrop. Without this, the bottom safe-area strip (behind the
+   iPhone home indicator) falls back to the browser's default white. */
+html {
+  background: var(--bg);
+}
+
 body {
   /* Pin the body so there is nothing to scroll, pull-to-refresh, or rubber-band. */
   position: fixed;
