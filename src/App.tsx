@@ -2,6 +2,7 @@ import Viewer from './components/Viewer.tsx'
 import ImageInput from './components/ImageInput.tsx'
 import LockButton from './components/LockButton.tsx'
 import Toast from './components/Toast.tsx'
+import FilterLab from './components/FilterLab.tsx'
 import { useImageDropPaste } from './hooks/useImageDropPaste.ts'
 import { useIOSGestureGuard } from './hooks/useIOSGestureGuard.ts'
 import { useLockFeedback } from './hooks/useLockFeedback.ts'
@@ -10,6 +11,14 @@ import { useEtchStore } from './store/useEtchStore.ts'
 import './App.css'
 
 export default function App() {
+  // Dev harness for the filter engine (M3), reachable at #lab.
+  if (import.meta.env.DEV && window.location.hash === '#lab') {
+    return <FilterLab />
+  }
+  return <MainApp />
+}
+
+function MainApp() {
   useIOSGestureGuard()
   useImageDropPaste()
   useLockFeedback()
