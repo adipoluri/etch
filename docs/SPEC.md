@@ -26,7 +26,16 @@ The only reliable way to hide Safari's chrome is **Add to Home Screen (PWA)**.
   the Dynamic Island / home bar instead of leaving black gutters.
 - Custom app icon + splash screen.
 - **Onboarding prompt:** first visit shows a friendly "Add to Home Screen for
-  fullscreen tracing" card with the Share → Add to Home Screen steps.
+  fullscreen tracing" card with the Share → Add to Home Screen steps. This is a
+  **manual instruction card on iOS** — `beforeinstallprompt` is Android/Chromium
+  only and never fires in Safari. (On Android we *can* use `beforeinstallprompt`
+  for a one-tap install; treat that as progressive enhancement.)
+- **Non-Safari iOS browsers:** Chrome/Firefox/Edge on iOS are all WebKit skins
+  and **cannot** install a standalone, chrome-free PWA — only Safari's Add to
+  Home Screen does. If opened in a non-Safari iOS browser (detect via UA:
+  `CriOS`, `FxiOS`, `EdgiOS`…), show a banner: *"For fullscreen tracing, open in
+  Safari and Add to Home Screen."* The app still runs there; it just can't hide
+  the browser chrome.
 - **Fallback (plain tab):** scroll 1px to collapse the URL bar; accept that it's
   imperfect and keep steering users to install.
 
@@ -42,8 +51,11 @@ Lock = freeze the image transform + swallow every canvas touch + hide controls.
 - **Unlock requires a deliberate gesture** that won't fire by accident — e.g.
   two-finger long-press, or a small tap target tucked in a safe corner. A single
   tap must never unlock.
-- **Haptic tick** on lock and unlock (Vibration API where supported) so the
-  state change is felt without looking.
+- **State-change confirmation:** on lock/unlock, give a clear **visual cue**
+  (border tint + glyph) plus an optional **short audio tick**. NOTE: the
+  Vibration API (`navigator.vibrate`) is **not supported in iOS Safari**, so true
+  haptics are unavailable on the priority platform — wire `navigator.vibrate`
+  only as Android progressive enhancement, never as the primary feedback.
 
 ### Input suppression (always, strongest while locked)
 - `touch-action: none` on canvas → kills page pinch-zoom & double-tap-zoom.
@@ -51,7 +63,10 @@ Lock = freeze the image transform + swallow every canvas touch + hide controls.
   and rubber-band scroll.
 - `user-select: none` + `-webkit-touch-callout: none` → kills text select /
   long-press callout.
-- `user-scalable=no` in viewport.
+- **iOS ignores `user-scalable=no`** (since iOS 10), so it is NOT sufficient.
+  Must also `preventDefault()` on `gesturestart` / `gesturechange` and on
+  multi-touch `touchmove` to block Safari's pinch-zoom of the page. Keep the
+  viewport tag too as a hint for other browsers.
 - Edge-swipe back/forward: can't fully block in a Safari tab; **standalone PWA
   mode disables it** — another reason to push the install.
 
@@ -60,7 +75,9 @@ Lock = freeze the image transform + swallow every canvas touch + hide controls.
 - Pan (1-finger drag), pinch-zoom, rotate (2-finger).
 - **Quick reset:** one tap → fit-to-screen + filter off + rotation cleared.
 - Keep transform smooth via CSS `transform` (GPU), reprocess filter from the
-  original (see §4).
+  original (see §4). **Tradeoff:** CSS-scaling the canvas means the filtered
+  raster is fixed-resolution, so zooming in for fine lines softens it. Acceptable
+  for v1; the fix (re-rendering the filter at the current zoom) is a later option.
 - **Keep screen awake:** Wake Lock API (iOS 16.4+).
 - Auto-hide toolbar after a few seconds idle, and always when locked. Big,
   thumb-reachable controls anchored above the home bar.
@@ -83,9 +100,11 @@ reprocessed from the source on every parameter change.
 ### Mode 1 — Line Art (edge detection) — **default**
 Detect edges, render as clean dark lines on white.
 - **Sobel** — fast, simple, a bit noisy.
-- **Canny** — crisp, thin, connected contours; closest to a real line drawing.
 - **XDoG (Extended Difference-of-Gaussians)** — sketch/hand-drawn look; the most
   artistic result. **Default algorithm.**
+- **Canny** — crisp, thin, connected contours. **Stretch goal:** its hysteresis
+  step (connected-edge tracking) is iterative and awkward on the GPU; since XDoG
+  is the default and looks better, Canny ships only if it comes cheap. Not core.
 - Controls: line **threshold** (detail retained), line **thickness**, **invert**
   (dark-on-white vs white-on-black).
 
@@ -112,14 +131,18 @@ ground between full photo and pure line art.
 
 ## 6. Image input
 
-- Photo library, file picker, paste from clipboard.
-- **Share-sheet target** — "Share → Trace" straight from Photos/Safari via the
-  manifest `share_target`.
+- Photo library, file picker, paste from clipboard, drag-and-drop.
+- **Share-sheet target** — manifest `share_target` is **Chromium/Android only**;
+  iOS Safari ignores it, so "Share → Etch" does NOT work on the priority
+  platform. Ship it as **Android progressive enhancement**; on iOS rely on the
+  file picker / paste / drag paths above.
 
 ## 7. Persistence
 
 - **Auto-restore current session** (image + transform + filter state) via
-  IndexedDB, so a reload or app-switch doesn't lose placement.
+  IndexedDB. **Persist the source image as a `Blob`/`File`, not an `ImageBitmap`**
+  (Safari has been buggy storing `ImageBitmap`); re-decode on restore. So a reload
+  or app-switch doesn't lose placement.
 - Storage is on-device only; note iOS may evict PWA storage when low on space —
   treat as best-effort.
 - Named/multi-image library is **out of scope for v1** (deferred).
@@ -132,9 +155,12 @@ ground between full photo and pure line art.
 - **Rendering**: CSS `transform` on the displayed layer for pan/zoom/rotate;
   WebGL (or Canvas2D fallback) for the trace-filter pipeline.
 - **Storage**: IndexedDB for image blobs + session state.
-- **Stack**: lightweight — vanilla JS or small React. No backend.
-- **APIs used**: Web App Manifest, Service Worker, Wake Lock, Pointer Events,
-  Vibration, Clipboard, Web Share Target, IndexedDB, Canvas/WebGL.
+- **Stack**: React 18 + TypeScript + Zustand, Vite, vite-plugin-pwa. No backend.
+  See [PLAN.md](PLAN.md) for the full stack and milestones.
+- **Core APIs** (work in iOS Safari): Web App Manifest, Service Worker, Wake Lock
+  (16.4+), Pointer Events, Clipboard, IndexedDB, WebGL2.
+- **Android-only progressive enhancements** (absent in iOS Safari/WebKit):
+  Vibration, Web Share Target, `beforeinstallprompt`. Must degrade gracefully.
 
 ## Explicitly deferred (post-v1)
 Live camera trace · gesture-drawing timer · onion-skin / dual reference ·
