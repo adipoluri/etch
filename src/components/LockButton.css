@@ -22,7 +22,8 @@
 
 .lock-btn--locked {
   border-color: var(--lock-tint);
-  position: relative;
+  /* Stays position:absolute (set on .lock-btn) so it remains pinned top-right
+     AND still anchors the absolutely-positioned ring. */
   overflow: hidden;
 }
 
