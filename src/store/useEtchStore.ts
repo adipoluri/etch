@@ -64,6 +64,8 @@ export interface EtchState {
   ui: { controlsVisible: boolean }
   /** True while a filter slider is being dragged → renderer drops to low res. */
   interacting: boolean
+  /** True while selecting a focus region (gestures suspended). */
+  cropping: boolean
   /** Transient user-facing message (errors, hints). Null when nothing to show. */
   notice: string | null
   /** Last measured viewer size, kept so reset/fit uses accurate dimensions. */
@@ -73,8 +75,12 @@ export interface EtchState {
   setImage: (image: SourceImage | null) => void
   setNotice: (notice: string | null) => void
   setInteracting: (interacting: boolean) => void
+  setCropping: (cropping: boolean) => void
   setTransform: (patch: Partial<Transform>) => void
   setContainerSize: (w: number, h: number) => void
+  setGrid: (patch: Partial<EtchState['grid']>) => void
+  setFlip: (patch: Partial<EtchState['flip']>) => void
+  setFlipTimer: (patch: Partial<EtchState['flipTimer']>) => void
   /** Center + scale the current image to fit a container of the given size. */
   fitToScreen: (containerW: number, containerH: number) => void
   /** Fit using the last measured container size (for the Fit/reset button). */
@@ -95,15 +101,21 @@ export const useEtchStore = create<EtchState>((set, get) => ({
   locked: false,
   ui: { controlsVisible: true },
   interacting: false,
+  cropping: false,
   notice: null,
   containerSize: { w: 0, h: 0 },
 
   setImage: (image) => set({ image }),
   setNotice: (notice) => set({ notice }),
   setInteracting: (interacting) => set({ interacting }),
+  setCropping: (cropping) => set({ cropping }),
   setTransform: (patch) =>
     set((s) => ({ transform: { ...s.transform, ...patch } })),
   setContainerSize: (w, h) => set({ containerSize: { w, h } }),
+  setGrid: (patch) => set((s) => ({ grid: { ...s.grid, ...patch } })),
+  setFlip: (patch) => set((s) => ({ flip: { ...s.flip, ...patch } })),
+  setFlipTimer: (patch) =>
+    set((s) => ({ flipTimer: { ...s.flipTimer, ...patch } })),
   fitToScreen: (containerW, containerH) =>
     set((s) => {
       if (!s.image || containerW <= 0 || containerH <= 0) return {}

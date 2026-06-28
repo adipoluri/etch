@@ -7,14 +7,41 @@
   touch-action: none; /* swallow native pan/zoom/scroll */
 }
 
-.viewer__canvas {
-  /* Natural-resolution canvas; CSS transform handles pan/zoom/rotate.
-     transform-origin center so rotate/scale pivot on the image center. */
+/* Transformed stage holding the image canvas + grid; both track pan/zoom/rotate.
+   Sized to natural image dims via inline style. */
+.viewer__stage {
+  position: relative;
   transform-origin: center center;
   will-change: transform;
-  /* Crisp when zoomed in on line art; browsers vary, this is a hint. */
-  image-rendering: auto;
-  max-width: none;
+}
+
+.viewer__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.viewer__grid {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.viewer__grid-border,
+.viewer__grid-lines line {
+  fill: none;
+  stroke: rgba(255, 60, 90, 0.85);
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke; /* constant on-screen width at any zoom */
+}
+
+.viewer__grid-lines line {
+  stroke: rgba(255, 255, 255, 0.7);
+  stroke-width: 1;
 }
 
 /* Locked state: tinted border so a frozen screen is explained. The border

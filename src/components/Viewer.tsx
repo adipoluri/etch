@@ -2,6 +2,8 @@ import { useCallback, useEffect, useRef } from 'react'
 import { useEtchStore } from '../store/useEtchStore.ts'
 import { useGestures } from '../hooks/useGestures.ts'
 import { FilterRenderer } from '../gl/FilterRenderer.ts'
+import GridOverlay from './GridOverlay.tsx'
+import CropOverlay from './CropOverlay.tsx'
 import './Viewer.css'
 
 const QUALITY_HIGH = 2048
@@ -9,22 +11,22 @@ const QUALITY_LOW = 1024
 
 export default function Viewer() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rendererRef = useRef<FilterRenderer | null>(null)
   const rafRef = useRef(0)
-  // Latest measured container size (accurate, from ResizeObserver).
   const sizeRef = useRef({ w: 0, h: 0 })
 
   const image = useEtchStore((s) => s.image)
   const filter = useEtchStore((s) => s.filter)
   const transform = useEtchStore((s) => s.transform)
+  const flip = useEtchStore((s) => s.flip)
   const locked = useEtchStore((s) => s.locked)
   const interacting = useEtchStore((s) => s.interacting)
   const fitToScreen = useEtchStore((s) => s.fitToScreen)
 
   useGestures(containerRef)
 
-  // Coalesce renders to one per animation frame, reading the latest filter.
   const scheduleRender = useCallback(() => {
     if (rafRef.current) return
     rafRef.current = requestAnimationFrame(() => {
@@ -53,24 +55,24 @@ export default function Viewer() {
     }
   }, [])
 
-  // Upload each new image; size the canvas element to natural dims so the CSS
-  // transform scales from there (the drawing buffer is resolution-capped).
+  // Upload each new image; size the stage to natural dims so the CSS transform
+  // scales from there (the drawing buffer is resolution-capped).
   useEffect(() => {
-    const canvas = canvasRef.current
+    const stage = stageRef.current
     const renderer = rendererRef.current
-    if (!canvas || !renderer || !image) return
-    canvas.style.width = `${image.width}px`
-    canvas.style.height = `${image.height}px`
+    if (!stage || !renderer || !image) return
+    stage.style.width = `${image.width}px`
+    stage.style.height = `${image.height}px`
     renderer.setSource(image.bitmap)
     scheduleRender()
   }, [image, scheduleRender])
 
-  // Re-render whenever the filter changes (object identity changes on edit).
+  // Re-render whenever the filter changes.
   useEffect(() => {
     if (image) scheduleRender()
   }, [filter, image, scheduleRender])
 
-  // Performance guard: drop to a cheaper working resolution while dragging.
+  // Performance guard: cheaper working resolution while dragging.
   useEffect(() => {
     const renderer = rendererRef.current
     if (!renderer || !image) return
@@ -78,8 +80,8 @@ export default function Viewer() {
     scheduleRender()
   }, [interacting, image, scheduleRender])
 
-  // Track the container's real size via ResizeObserver (accurate, post-layout).
-  // Re-fit on genuine size changes (orientation) — never while locked (tracing).
+  // Track container size; re-fit on genuine size changes (orientation), never
+  // while locked (tracing).
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -99,7 +101,7 @@ export default function Viewer() {
     return () => ro.disconnect()
   }, [])
 
-  // Fit each newly loaded image, using the already-measured size.
+  // Fit each newly loaded image.
   useEffect(() => {
     if (!image) return
     const { w, h } = sizeRef.current
@@ -107,17 +109,23 @@ export default function Viewer() {
   }, [image, fitToScreen])
 
   const { x, y, scale, rotation } = transform
+  const sx = scale * (flip.h ? -1 : 1)
+  const sy = scale * (flip.v ? -1 : 1)
 
   return (
     <div ref={containerRef} className={`viewer${locked ? ' viewer--locked' : ''}`}>
-      <canvas
-        ref={canvasRef}
-        className="viewer__canvas"
+      <div
+        ref={stageRef}
+        className="viewer__stage"
         hidden={!image}
         style={{
-          transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${scale})`,
+          transform: `translate(${x}px, ${y}px) rotate(${rotation}deg) scale(${sx}, ${sy})`,
         }}
-      />
+      >
+        <canvas ref={canvasRef} className="viewer__canvas" />
+        <GridOverlay />
+      </div>
+      <CropOverlay />
     </div>
   )
 }

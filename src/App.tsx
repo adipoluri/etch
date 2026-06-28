@@ -4,10 +4,12 @@ import ImageInput from './components/ImageInput.tsx'
 import LockButton from './components/LockButton.tsx'
 import Toast from './components/Toast.tsx'
 import FilterPanel from './components/FilterPanel.tsx'
+import ToolsPanel from './components/ToolsPanel.tsx'
 import FilterLab from './components/FilterLab.tsx'
 import { useImageDropPaste } from './hooks/useImageDropPaste.ts'
 import { useIOSGestureGuard } from './hooks/useIOSGestureGuard.ts'
 import { useLockFeedback } from './hooks/useLockFeedback.ts'
+import { useFlipTimer } from './hooks/useFlipTimer.ts'
 import { useAutoHideControls } from './hooks/useAutoHideControls.ts'
 import { useEtchStore } from './store/useEtchStore.ts'
 import './App.css'
@@ -24,13 +26,17 @@ function MainApp() {
   useIOSGestureGuard()
   useImageDropPaste()
   useLockFeedback()
+  useFlipTimer()
   useAutoHideControls()
 
   const image = useEtchStore((s) => s.image)
   const locked = useEtchStore((s) => s.locked)
+  const cropping = useEtchStore((s) => s.cropping)
   const controlsVisible = useEtchStore((s) => s.ui.controlsVisible)
   const resetView = useEtchStore((s) => s.resetView)
-  const [panelOpen, setPanelOpen] = useState(false)
+  const [panel, setPanel] = useState<'filter' | 'tools' | null>(null)
+
+  const showControls = !locked && !cropping && !panel
 
   return (
     <div className={`app${controlsVisible ? '' : ' app--idle'}`}>
@@ -46,20 +52,26 @@ function MainApp() {
         </div>
       ) : (
         <>
-          <LockButton />
-          {!locked && !panelOpen && (
+          {!cropping && <LockButton />}
+          {showControls && (
             <div className="controls">
               <ImageInput className="btn">Image</ImageInput>
               <button className="btn" onClick={resetView}>
                 Fit
               </button>
-              <button className="btn" onClick={() => setPanelOpen(true)}>
+              <button className="btn" onClick={() => setPanel('filter')}>
                 Filter
+              </button>
+              <button className="btn" onClick={() => setPanel('tools')}>
+                Tools
               </button>
             </div>
           )}
-          {!locked && panelOpen && (
-            <FilterPanel onClose={() => setPanelOpen(false)} />
+          {!locked && panel === 'filter' && (
+            <FilterPanel onClose={() => setPanel(null)} />
+          )}
+          {!locked && panel === 'tools' && (
+            <ToolsPanel onClose={() => setPanel(null)} />
           )}
         </>
       )}

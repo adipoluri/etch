@@ -10,6 +10,7 @@ const SCALE_MAX = 20
  *  store at gesture start to avoid stale closures. */
 export function useGestures(target: RefObject<HTMLElement>) {
   const locked = useEtchStore((s) => s.locked)
+  const cropping = useEtchStore((s) => s.cropping)
   const setTransform = useEtchStore((s) => s.setTransform)
 
   useGesture(
@@ -20,7 +21,7 @@ export function useGestures(target: RefObject<HTMLElement>) {
     },
     {
       target,
-      enabled: !locked,
+      enabled: !locked && !cropping,
       eventOptions: { passive: false },
       drag: {
         from: () => {
