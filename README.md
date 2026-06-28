@@ -1,4 +1,4 @@
-# Trace
+# Etch
 
 A mobile-first, client-side PWA for tracing reference images. Load an image, view
 it edge-to-edge fullscreen, convert it to traceable line art with on-device image

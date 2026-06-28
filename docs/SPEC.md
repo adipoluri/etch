@@ -1,4 +1,4 @@
-# Trace — Product Spec (v1 MVP)
+# Etch — Product Spec (v1 MVP)
 
 A mobile-first, client-side web app (PWA) for tracing reference images. Load an
 image, view it edge-to-edge fullscreen, apply a "trace filter" that converts the
