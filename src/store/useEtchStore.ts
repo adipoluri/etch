@@ -44,7 +44,7 @@ export interface FilterState {
 const IDENTITY_TRANSFORM: Transform = { x: 0, y: 0, scale: 1, rotation: 0 }
 
 const DEFAULT_FILTER: FilterState = {
-  mode: 'lineart',
+  mode: 'none',
   lineart: { algo: 'xdog', threshold: 0.5, thickness: 1, invert: false },
   posterize: { levels: 3 },
   threshold: { cutoff: 0.5 },

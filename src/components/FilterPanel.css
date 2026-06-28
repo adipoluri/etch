@@ -61,10 +61,11 @@
 }
 
 .panel__tab--on {
-  background: var(--accent);
+  background: linear-gradient(160deg, var(--accent), var(--accent-deep));
   border-color: var(--accent);
-  color: #06121a;
+  color: #fff;
   font-weight: 600;
+  box-shadow: 0 2px 12px var(--accent-glow);
 }
 
 .panel__body {
@@ -89,7 +90,7 @@
 }
 
 .panel__segbtn--on {
-  background: rgba(79, 195, 247, 0.18);
+  background: var(--accent-soft);
   border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
@@ -103,28 +104,8 @@
   opacity: 0.9;
 }
 
-/* Slider (shared component) */
-.slider {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-}
-
-.slider__label {
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.85rem;
-  opacity: 0.85;
-}
-
-.slider__label em {
-  color: var(--accent);
-  font-style: normal;
-  font-variant-numeric: tabular-nums;
-}
-
-.slider input[type='range'] {
-  width: 100%;
+.panel__check input {
   accent-color: var(--accent);
-  touch-action: none;
+  width: 1.1rem;
+  height: 1.1rem;
 }

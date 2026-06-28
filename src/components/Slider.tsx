@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react'
+import './Slider.css'
+
 interface Props {
   label: string
   min: number
@@ -20,18 +23,27 @@ export default function Slider({
   onInteract,
   format,
 }: Props) {
+  const pct = ((value - min) / (max - min)) * 100
+  const display = format
+    ? format(value)
+    : Number.isInteger(value)
+      ? String(value)
+      : value.toFixed(2)
+
   return (
     <label className="slider">
       <span className="slider__label">
-        {label}
-        <em>{format ? format(value) : value}</em>
+        <span>{label}</span>
+        <span className="slider__value">{display}</span>
       </span>
       <input
+        className="slider__input"
         type="range"
         min={min}
         max={max}
         step={step}
         value={value}
+        style={{ '--pct': `${pct}%` } as CSSProperties}
         onChange={(e) => onChange(parseFloat(e.target.value))}
         onPointerDown={() => onInteract?.(true)}
         onPointerUp={() => onInteract?.(false)}
